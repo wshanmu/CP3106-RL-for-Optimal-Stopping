@@ -4,13 +4,16 @@ This repository is for CP3106: Indepedent Project at the National University of 
 ## 1. Crypto Data:
 This folder includes the scripts to obtain the crypto-currencies data and generate temp file for further experimentations.
 
-## 2. RL Environment:
+## 2. Back-testing:
+This folder includes the scripts to obatin the back-testing results with the Dollar Cost Averaging method.
+
+## 3. RL Environment:
 This folder includes an OpenAI Gym style reinforcement learning environment for optimal stopping problem, and the instruction for registering this environment. 
 
-## 3. Rainbow DQN:
+## 4. Rainbow DQN:
 This folder includes the scripts for traning and evaluating the rainbow DQN agent, and the investment visualization.
 
-## 4. Presentation and Report:
+## 5. Presentation and Report:
 This folder includes my presentation slides and final report for this project.
 
 ## Reference:
