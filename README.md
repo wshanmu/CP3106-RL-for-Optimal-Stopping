@@ -1,6 +1,18 @@
 # Cryptocurrency-Investment-with-Dollar-Cost-Averaging
 This repository is for CP3106: Indepedent Project at the National University of Singapore.
 
+## 1. Crypto Data:
+This folder includes the scripts to obtain the crypto-currencies data and generating temp file for further experiments.
+
+## 2. RL Environment:
+This folder includes an OpenAI Gym style reinforcement learning environment for optimal stopping problem, and the instruction for registering this environment. 
+
+## 3. Rainbow DQN:
+This folder includes the scripts for traning and evaluating the rainbow DQN agent, and the investment visualization.
+
+## 4. Presentation and Report:
+This folder includes my presentation slides and final report for this project.
+
 ## Reference:
 [matze/mtheme: A modern LaTeX Beamer theme (github.com)](https://github.com/matze/mtheme)
 
