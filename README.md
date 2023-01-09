@@ -2,7 +2,7 @@
 This repository is for CP3106: Indepedent Project at the National University of Singapore.
 
 ## 1. Crypto Data:
-This folder includes the scripts to obtain the crypto-currencies data and generating temp file for further experiments.
+This folder includes the scripts to obtain the crypto-currencies data and generate temp file for further experimentations.
 
 ## 2. RL Environment:
 This folder includes an OpenAI Gym style reinforcement learning environment for optimal stopping problem, and the instruction for registering this environment. 
