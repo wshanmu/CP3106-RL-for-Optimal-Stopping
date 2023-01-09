@@ -2,7 +2,7 @@ import datetime
 import math
 import os
 import random
-
+import argparse
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
@@ -759,58 +759,36 @@ def seed_torch(seed):
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
-name_num = 1
-data_file = open(r'../data/Eva_Data.pkl', 'rb')
-content = pickle.load(data_file)
-total_data, start_date = GetPriceList(content, name_num=name_num)  # 0 for BTC, 1 for ETH
-if name_num == 0:
-    start_index = 2560  # for BTC
-else:
-    start_index = 1800  # for ETH
-useful_data = total_data[start_index:]  # Discard useless data
-train_data = useful_data[0:int(len(useful_data) * 0.85)]
-test_data = useful_data[-int(len(useful_data) * 0.15):]
-print("Total data date range: %s to %s, %d days" % (start_date, dateAdd(start_date, len(total_data)), len(total_data)))
-print("Train data date range: %s to %s, %d days" % (
-dateAdd(start_date, start_index), dateAdd(start_date, start_index + len(train_data)), len(train_data)))
-print("Test data date range: %s to %s %d days" % (
-    dateAdd(start_date, start_index + len(train_data) + 1), dateAdd(start_date, start_index + len(train_data) + 1 + len(test_data)),
-    len(test_data)))
-
-# parameters
-num_frames = 300 * 1000
-memory_size = 10000
-batch_size = 128
-target_update = 100
-
-wnd_t = 30
-cycle_T = 9
-env_id = 'CryptoEnv-v0'
-env = gym.make('CryptoEnv-v0', data=train_data, wnd_t=wnd_t, cycle_T=cycle_T)
-
 
 def rainbowtrain(num_frames):
-    seed_list = [888, 777, 999]
+    seed_list = [888, 777, 999]  # set different random seeds
     for seed in seed_list:
-        path = './models/%s_Rainbow_%d_%d/Seed%d_Step_%dk/' % (Expetiment_ID, wnd_t, cycle_T, seed, int(num_frames /1000))
+        path = './models/%s_Rainbow_%d_%d/Seed%d_Step_%dk/' % (Expetiment_ID, wnd_t, cycle_T, seed, int(num_frames /1000))  # model path
         if not os.path.exists(path):
             os.makedirs(path)
-        logger = Logger(exp_name="Rainbow", env_name="ETH_V10", seed=seed)
+        logger = Logger(exp_name="Rainbow", env_name=Expetiment_ID, seed=seed)  # for visualization
         np.random.seed(seed)
         random.seed(seed)
         seed_torch(seed)
         env.seed(seed)
-        agent = DQNAgent(env, memory_size, batch_size, target_update, gamma=0.95)
+        agent = DQNAgent(env, memory_size, batch_size, target_update, gamma, v_min=v_min, v_max=v_max, atom_size=atom_size, n_step=n_step)
         agent.train(logger, seed, num_frames, plotting_interval=num_frames)       
         # torch.save(agent.dqn,
         #            '%sSeed%d_%s_%d_%d_Step_%d.pth' % (Expetiment_ID, seed, 'Rainbow', wnd_t, cycle_T, num_frames))
 
 
 def rainbowevaluate(path, num=0, stat=136):
-    F = open(r'../data/Eva_Data.pkl', 'rb')
+    """Evaluate the agent on all the possible episodes. (refer Section 6.2 for further information)
+    Args:
+        path: path to the traned model
+        num: 0 for BTC and 1 for ETH
+        stat: length of test period (<=136 for BTC and <=127 for ETH)
+    """
+
+    F = open(r'../data/Data.pkl', 'rb')
     content = pickle.load(F)
     total_data, start_date = GetPriceList(content, name_num=num)  # get BTC/ETH price data
-    test_data_list = [total_data[-stat-30:]]
+    test_data_list = [total_data[-stat-wnd_t:]]  # add different test period here
     seed = 777
     np.random.seed(seed)
     random.seed(seed)
@@ -826,15 +804,15 @@ def rainbowevaluate(path, num=0, stat=136):
         original_episodes = test_env.prepare_original_episodes()
         e = 0
         random_list = []
-        p_list = []
-        first_day = []
-        last_day = []
-        avg_day = []
-        ratio1 = []
-        ratio2 = []
-        ratio3 = []
-        ratio4 = []
-        t_list = []
+        p_list = []  # picked price
+        first_day = []  # price on the 1st day
+        last_day = []  # price on the last day
+        avg_day = [] # average price
+        ratio_first_day = []
+        ratio_last_day = []
+        ratio_random_day = []
+        ratio_average_amount = []
+        t_list = []  #
         visual_price = []
     
         for episode in ev_episodes:
@@ -861,7 +839,6 @@ def rainbowevaluate(path, num=0, stat=136):
                     period_price_list = [original_episodes[e][i][-1] for i in range(cycle_T)]
                     avg_day.append(np.mean(np.array(period_price_list)))
                     if e % cycle_T == 0:
-                        # print('current e:%d'%e)
                         t_list.append(int(wnd_t + cycle_T * int(e // cycle_T) + t - 1))
                         visual_price.append(original_episodes[e][t][-1])
                     break
@@ -876,17 +853,17 @@ def rainbowevaluate(path, num=0, stat=136):
             r_amount = np.sum(np.array([10000 / i for i in random_list]))
             avg_amount = np.sum(np.array([10000 / i for i in avg_day]))
             avg_amount_list = (np.array([10000 / i for i in avg_day]))
-            ratio1.append((p_amount - f_amount) / f_amount * 100)
-            ratio2.append((p_amount - l_amount) / l_amount * 100)
-            ratio3.append((p_amount - r_amount) / r_amount * 100)
-            ratio4.append((p_amount - avg_amount) / avg_amount * 100)
-        result_list = [np.mean(np.array(ratio1)), np.mean(np.array(ratio2)), np.mean(np.array(ratio3)), np.mean(np.array(ratio4))]
+            ratio_first_day.append((p_amount - f_amount) / f_amount * 100)
+            ratio_last_day.append((p_amount - l_amount) / l_amount * 100)
+            ratio_random_day.append((p_amount - r_amount) / r_amount * 100)
+            ratio_average_amount.append((p_amount - avg_amount) / avg_amount * 100)
+        result_list = [np.mean(np.array(ratio_first_day)), np.mean(np.array(ratio_last_day)), np.mean(np.array(ratio_random_day)), np.mean(np.array(ratio_average_amount))]
         print("In total:")
         if len([i for i in result_list if i>0]) >= 3:
-            print("Compared with always buy on the first day: %.2f %%" % np.mean(np.array(ratio1)))
-            print("Compared with always buy on the last day: %.2f %%" % np.mean(np.array(ratio2)))
-            print("Compared with always buy on a random day: %.2f %%" % np.mean(np.array(ratio3)))
-            print("Compared with buy on the average price: %.2f %%" % np.mean(np.array(ratio4)))
+            print("Compared with always buy on the first day: %.2f %%" % np.mean(np.array(ratio_first_day)))
+            print("Compared with always buy on the last day: %.2f %%" % np.mean(np.array(ratio_last_day)))
+            print("Compared with always buy on a random day: %.2f %%" % np.mean(np.array(ratio_random_day)))
+            print("Compared with buy on the average price: %.2f %%" % np.mean(np.array(ratio_average_amount)))
         else:
             print("none")
         # print(np.mean(p_amount_list)/np.std(p_amount_list))
@@ -915,10 +892,17 @@ def rainbowevaluate(path, num=0, stat=136):
 
 
 def SingleRainbowEvaluate(path, num=0, stat=136):
-    F = open(r'../data/Eva_Data.pkl', 'rb')
+    """Start to invest on the first day of test period and end on the last day. (refer Section 6.2 for further information)
+    Args:
+        path: path to the traned model
+        num: 0 for BTC and 1 for ETH
+        stat: length of test period (<=136 for BTC and <=127 for ETH)
+    """
+
+    F = open(r'../data/Data.pkl', 'rb')
     content = pickle.load(F)
     total_data, start_date = GetPriceList(content, name_num=num)  # 0 for BTC prince data
-    test_data_list = [total_data[-(stat+30):]]
+    test_data_list = [total_data[-(stat+wnd_t):]]  # add different test period here
     seed = 777
     np.random.seed(seed)
     random.seed(seed)
@@ -939,10 +923,10 @@ def SingleRainbowEvaluate(path, num=0, stat=136):
         first_day = []
         last_day = []
         avg_day = []
-        ratio1 = []
-        ratio2 = []
-        ratio3 = []
-        ratio4 = []
+        ratio_first_day = []
+        ratio_last_day = []
+        ratio_random_day = []
+        ratio_average_amount = []
         t_list = []
         visual_price = []
     
@@ -987,17 +971,17 @@ def SingleRainbowEvaluate(path, num=0, stat=136):
         r_amount = np.sum(np.array([10000 / i for i in random_list]))
         avg_amount = np.sum(np.array([10000 / i for i in avg_day]))
         avg_amount_list = (np.array([10000 / i for i in avg_day]))
-        ratio1.append((p_amount - f_amount) / f_amount * 100)
-        ratio2.append((p_amount - l_amount) / l_amount * 100)
-        ratio3.append((p_amount - r_amount) / r_amount * 100)
-        ratio4.append((p_amount - avg_amount) / avg_amount * 100)
-        result_list = [np.mean(np.array(ratio1)), np.mean(np.array(ratio2)), np.mean(np.array(ratio3)), np.mean(np.array(ratio4))]
+        ratio_first_day.append((p_amount - f_amount) / f_amount * 100)
+        ratio_last_day.append((p_amount - l_amount) / l_amount * 100)
+        ratio_random_day.append((p_amount - r_amount) / r_amount * 100)
+        ratio_average_amount.append((p_amount - avg_amount) / avg_amount * 100)
+        result_list = [np.mean(np.array(ratio_first_day)), np.mean(np.array(ratio_last_day)), np.mean(np.array(ratio_random_day)), np.mean(np.array(ratio_average_amount))]
         print("In single:")
         if len([i for i in result_list if i>0]) >= 4:
-            print("Compared with always buy on the first day: %.2f %%" % np.mean(np.array(ratio1)))
-            print("Compared with always buy on the last day: %.2f %%" % np.mean(np.array(ratio2)))
-            print("Compared with always buy on a random day: %.2f %%" % np.mean(np.array(ratio3)))
-            print("Compared with buy on the average price: %.2f %%" % np.mean(np.array(ratio4)))
+            print("Compared with always buy on the first day: %.2f %%" % np.mean(np.array(ratio_first_day)))
+            print("Compared with always buy on the last day: %.2f %%" % np.mean(np.array(ratio_last_day)))
+            print("Compared with always buy on a random day: %.2f %%" % np.mean(np.array(ratio_random_day)))
+            print("Compared with buy on the average price: %.2f %%" % np.mean(np.array(ratio_average_amount)))
         else:
             print("none")
 
@@ -1018,16 +1002,83 @@ def SingleRainbowEvaluate(path, num=0, stat=136):
         # plt.savefig("./%s.jpg" % 1)
 
 
+def load_price_data(name_num):
+    """load original BTC/ETH price data.
+    Args:
+        name_num: 0 for BTC and 1 for ETH
+    """
+    data_file = open(r'../data/Data.pkl', 'rb')
+    content = pickle.load(data_file)
+    total_data, start_date = GetPriceList(content, name_num=name_num)  # 0 for BTC, 1 for ETH
+    if name_num == 0:
+        start_index = 2560  # for BTC
+    else:
+        start_index = 1800  # for ETH
+    useful_data = total_data[start_index:]  # Discard useless data
+    train_data = useful_data[0:int(len(useful_data) * 0.85)]
+    test_data = useful_data[-int(len(useful_data) * 0.15):]
+    print("Total data date range: %s to %s, %d days" % (start_date, dateAdd(start_date, len(total_data)), len(total_data)))
+    print("Train data date range: %s to %s, %d days" % (
+    dateAdd(start_date, start_index), dateAdd(start_date, start_index + len(train_data)), len(train_data)))
+    print("Test data date range: %s to %s %d days" % (
+        dateAdd(start_date, start_index + len(train_data) + 1), dateAdd(start_date, start_index + len(train_data) + 1 + len(test_data)),
+        len(test_data)))
+    return useful_data, train_data, test_data
+
+
 if __name__ == '__main__':
-    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-    Expetiment_ID = 'ETH_IDK'
-    rainbowtrain(num_frames)
-    
-    for i in range(200, 301):
-        path = './models/ETH_V_max_0_20_Rainbow_30_9/Seed777_Step_300k/%s.pth' % str(i)
-        rainbowevaluate(path=path, num=1, stat=127)
-        SingleRainbowEvaluate(path=path, num=1, stat=127)
-        print("Currently i = %d" % i)
-        print(" ")
+    # parameters   
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ExpID", type=str, default="BTC", help="Experiment ID")
+    parser.add_argument("--frames", type=int, default=300 * 1000, help="number of frames")
+    parser.add_argument("--name", type=int, default=0, help="which crypto, 0 for BTC and 1 for ETH")
+    parser.add_argument("--wnd", type=int, default=30, help="window size")
+    parser.add_argument("--cycle", type=int, default=9, help="investment cycle")
+    parser.add_argument("--memory_size", type=int, default=10000, help="memory size for replay buffer")
+    parser.add_argument("--batch_size", type=int, default=128, help="batch size for training")
+    parser.add_argument("--target_update", type=int, default=100, help="Update the target network every target_update episodes")
+    parser.add_argument("--gamma", type=int, default=0.95, help="gamma for Q learning")
+    parser.add_argument("--v_min", type=int, default=0, help="v_min for C51")
+    parser.add_argument("--v_max", type=int, default=20, help="v_max for C51")
+    parser.add_argument("--atom_size", type=int, default=51, help="atom size of distributed RL")
+    parser.add_argument("--n_step", type=int, default=3, help="multi-step learning")
+    parser.add_argument("--mode", type=int, default=0, help="mode 0: training, mode 1: evauluation")
+
+    args = parser.parse_args()
+    num_frames = args.frames
+    Expetiment_ID = args.ExpID
+    wnd_t = args.wnd
+    cycle_T = args.cycle
+    name_num = args.name
+    memory_size = args.memory_size
+    batch_size = args.batch_size
+    target_update = args.target_update
+    gamma = args.gamma
+    v_min = args.v_min
+    v_max = args.v_max
+    atom_size = args.atom_size
+    n_step = args.n_step
+
+    running_mode = args.mode
+
+    # load original price data
+    useful_data, train_data, test_data = load_price_data(name_num)
+
+    # Create gym environment    
+    env_id = 'CryptoEnv-v0'
+    env = gym.make('CryptoEnv-v0', data=train_data, wnd_t=wnd_t, cycle_T=cycle_T)
+
+    # training or evaluation
+    if running_mode == 0:
+        rainbowtrain(num_frames)
+    elif running_mode == 1:
+        for i in range(100, 102):
+            path = './models/ETH_V_max_0_20_Rainbow_30_9/Seed777_Step_300k/%s.pth' % str(i)
+            rainbowevaluate(path=path, num=1, stat=127)
+            SingleRainbowEvaluate(path=path, num=1, stat=127)
+            print("Currently i = %d" % i)
+            print(" ")
+    else:
+        print("wrong mode")
 
     #  CUDA_VISIBLE_DEVICES=5 python rainbow.py 
