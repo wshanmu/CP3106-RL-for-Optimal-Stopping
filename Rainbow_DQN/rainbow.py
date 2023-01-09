@@ -785,7 +785,7 @@ def rainbowevaluate(path, num=0, stat=136):
         stat: length of test period (<=136 for BTC and <=127 for ETH)
     """
 
-    F = open(r'../data/Data.pkl', 'rb')
+    F = open(data_path, 'rb')
     content = pickle.load(F)
     total_data, start_date = GetPriceList(content, name_num=num)  # get BTC/ETH price data
     test_data_list = [total_data[-stat-wnd_t:]]  # add different test period here
@@ -899,7 +899,7 @@ def SingleRainbowEvaluate(path, num=0, stat=136):
         stat: length of test period (<=136 for BTC and <=127 for ETH)
     """
 
-    F = open(r'../data/Data.pkl', 'rb')
+    F = open(data_path, 'rb')
     content = pickle.load(F)
     total_data, start_date = GetPriceList(content, name_num=num)  # 0 for BTC prince data
     test_data_list = [total_data[-(stat+wnd_t):]]  # add different test period here
@@ -1007,7 +1007,7 @@ def load_price_data(name_num):
     Args:
         name_num: 0 for BTC and 1 for ETH
     """
-    data_file = open(r'../data/Data.pkl', 'rb')
+    data_file = open(data_path, 'rb')
     content = pickle.load(data_file)
     total_data, start_date = GetPriceList(content, name_num=name_num)  # 0 for BTC, 1 for ETH
     if name_num == 0:
@@ -1042,6 +1042,7 @@ if __name__ == '__main__':
     parser.add_argument("--v_max", type=int, default=20, help="v_max for C51")
     parser.add_argument("--atom_size", type=int, default=51, help="atom size of distributed RL")
     parser.add_argument("--n_step", type=int, default=3, help="multi-step learning")
+    parser.add_argument("--data_path", type=str, default=r'../data/Data.pkl', help="path to the price data")
     parser.add_argument("--mode", type=int, default=0, help="mode 0: training, mode 1: evauluation")
 
     args = parser.parse_args()
@@ -1058,10 +1059,11 @@ if __name__ == '__main__':
     v_max = args.v_max
     atom_size = args.atom_size
     n_step = args.n_step
-
+    data_path = args.data_path
     running_mode = args.mode
 
     # load original price data
+    
     useful_data, train_data, test_data = load_price_data(name_num)
 
     # Create gym environment    
