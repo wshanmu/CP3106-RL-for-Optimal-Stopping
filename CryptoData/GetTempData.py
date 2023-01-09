@@ -20,6 +20,7 @@ def get_item_index(index, date):
     price_list = []
     name_list = []
     df = pd.read_csv("./Data/" + date + ".csv")
+    index = min(index, df.index.size)
     for i in range(index):
         name_list.append(df.loc[df['Rank'] == i + 1, 'Name'].values)
         price_str = df.loc[df['Rank'] == i + 1, 'Price'].values
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--sd", type=str, default="20130506", help="start date")
     parser.add_argument("--ed", type=str, default="20221129", help="end date")
-    parser.add_argument("--index", type=int, default=10, help="how many items to be recorded")
+    parser.add_argument("--index", type=int, default=20, help="how many items to be recorded")
     parser.add_argument("--save_name", type=str, default="Data", help="save name for the .pkl file")
     args = parser.parse_args()
     start_date = args.sd
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     Data = {}
     for date in date_list:
         market_list, price_list, name_list = get_item_index(index=index, date=date)
-        for i in range(index):
+        for i in range(len(name_list)):
             Data[str(date) + str(name_list[i][0]) + '_price'] = price_list[i]
             Data[str(date) + str(name_list[i][0]) + '_market'] = market_list[i]
         continue
