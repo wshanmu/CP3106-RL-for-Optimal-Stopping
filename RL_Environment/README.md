@@ -1,5 +1,3 @@
-
-
 # How to register the `CryptoEnv`:
 
 1. install gym
