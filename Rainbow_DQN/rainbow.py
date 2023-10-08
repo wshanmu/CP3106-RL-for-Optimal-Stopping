@@ -866,29 +866,6 @@ def rainbowevaluate(path, num=0, stat=136):
             print("Compared with buy on the average price: %.2f %%" % np.mean(np.array(ratio_average_amount)))
         else:
             print("none")
-        # print(np.mean(p_amount_list)/np.std(p_amount_list))
-        # print(np.mean(f_amount_list)/np.std(f_amount_list))
-        # print(np.mean(l_amount_list)/np.std(l_amount_list))
-        # print(np.mean(avg_amount_list)/np.std(avg_amount_list))
-        
-        # plt.plot(test_data)
-        # plt.show()
-
-        # plt.figure(1, figsize=[16, 9])
-        # plt.plot(range(len(test_data)), test_data, label='Price')
-        # print(len(t_list))
-        # for i in range(len(t_list) + 1):
-        #     plt.axvline(x=i * cycle_T + wnd_t - 1, c='g', ls='--', lw=1)  # vertical
-        # # for i in range(int((len(test_data)-wnd_t)//cycle_T)+1):
-        # #     plt.axvline(x=i * cycle_T + wnd_t, c='g', ls='--', lw=1)  # vertical
-        # # for j in range(len(t_list)):
-        # #     plt.scatter(t_list[j], test_data[t_list[j]], s=20, c='r')  # stroke, colour
-        # for j in range(len(t_list)):
-        #     plt.scatter(t_list[j], visual_price[j], s=20, c='r')  # stroke, colour
-        # plt.title("The performance of the DQN", fontsize=15)
-        # plt.legend()
-        # # plt.show()
-        # plt.savefig("./%s.jpg" % 1)
 
 
 def SingleRainbowEvaluate(path, num=0, stat=136):
